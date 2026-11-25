@@ -576,21 +576,30 @@
     setInterval(function(){ntfyPoll('2m');},15000);
   }
   function uploadImage(dataUrl,cb){
+    var finished=false;
+    function done(url){if(finished)return;finished=true;cb(url||'');}
+    var timer=setTimeout(function(){done('');},12000);
     fetch(dataUrl).then(function(r){return r.blob();}).then(function(blob){
-      var fd=new FormData();
-      fd.append('reqtype','fileupload');
-      fd.append('time','72h');
-      fd.append('fileToUpload',blob,'blessing.jpg');
-      return fetch('https://litterbox.catbox.moe/resources/internals/api.php',{method:'POST',body:fd})
-        .then(function(r){return r.text();})
-        .then(function(url){
-          url=url.trim();
-          if(/^https?:\/\//.test(url))return url;
-          return fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'PUT',headers:{'Filename':'blessing.jpg'},body:blob})
-            .then(function(r){return r.json();})
-            .then(function(j){return (j.attachment&&j.attachment.url)||'';});
+      fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'PUT',headers:{'Filename':'blessing.jpg'},body:blob})
+        .then(function(r){return r.json();})
+        .then(function(j){
+          var url=(j.attachment&&j.attachment.url)||'';
+          if(url){clearTimeout(timer);done(url);}
+          else throw new Error('no url');
+        })
+        .catch(function(){
+          var fd=new FormData();
+          fd.append('reqtype','fileupload');
+          fd.append('time','72h');
+          fd.append('fileToUpload',blob,'blessing.jpg');
+          fetch('https://litterbox.catbox.moe/resources/internals/api.php',{method:'POST',body:fd})
+            .then(function(r){return r.text();})
+            .then(function(url){
+              url=url.trim();clearTimeout(timer);
+              done(/^https?:\/\//.test(url)?url:'');
+            }).catch(function(){clearTimeout(timer);done('');});
         });
-    }).then(function(url){cb(url||'');}).catch(function(){cb('');});
+    }).catch(function(){clearTimeout(timer);done('');});
   }
   function ntfyPublish(note){
     if(!note||!note.id)return;
@@ -881,16 +890,15 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
+    publishNote(note);ntfyPublish(note);
     if(note.img&&/^data:/.test(note.img)){
       uploadImage(note.img,function(url){
         if(url){
           for(var k=0;k<notes.length;k++){if(notes[k].id===note.id)notes[k].img=url;}
           note.img=url;saveNotes();
+          publishNote(note);ntfyPublish(note);renderNotes();
         }
-        publishNote(note);ntfyPublish(note);renderNotes();
       });
-    }else{
-      publishNote(note);ntfyPublish(note);
     }
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
     resetBites();
