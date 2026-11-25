@@ -590,6 +590,7 @@
       eating=false;
       serveScene.classList.remove('eating');
       servedSlice.style.opacity='0';
+      for(var j=0;j<biteMarks.length;j++)biteMarks[j].classList.remove('on');
       openFormTimer=setTimeout(openForm,560);
     }else{
       biteHint.textContent='点一下，吃一口 · 还剩 '+(MAX_BITES-biteStage)+' 口';
