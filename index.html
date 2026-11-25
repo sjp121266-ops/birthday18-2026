@@ -552,6 +552,7 @@
     }
     var n=obj.note||obj;
     if(!n||!n.id)return;
+    if(!n.img&&data.attachment&&data.attachment.url)n.img=data.attachment.url;
     mergeSharedNote(n);
   }
   function ntfyPoll(since){
@@ -574,9 +575,26 @@
     }catch(e){}
     setInterval(function(){ntfyPoll('2m');},15000);
   }
+  function uploadImage(dataUrl,cb){
+    fetch(dataUrl).then(function(r){return r.blob();}).then(function(blob){
+      var fd=new FormData();
+      fd.append('reqtype','fileupload');
+      fd.append('time','72h');
+      fd.append('fileToUpload',blob,'blessing.jpg');
+      return fetch('https://litterbox.catbox.moe/resources/internals/api.php',{method:'POST',body:fd})
+        .then(function(r){return r.text();})
+        .then(function(url){
+          url=url.trim();
+          if(/^https?:\/\//.test(url))return url;
+          return fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'PUT',headers:{'Filename':'blessing.jpg'},body:blob})
+            .then(function(r){return r.json();})
+            .then(function(j){return (j.attachment&&j.attachment.url)||'';});
+        });
+    }).then(function(url){cb(url||'');}).catch(function(){cb('');});
+  }
   function ntfyPublish(note){
     if(!note||!note.id)return;
-    var out={id:note.id,name:note.name,text:note.text,time:note.time,img:''};
+    var out={id:note.id,name:note.name,text:note.text,time:note.time,img:(/^https?:\/\//.test(note.img||'')?note.img:'')};
     fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'POST',body:JSON.stringify(out)}).catch(function(){});
   }
   function ntfyDelete(id){
@@ -863,7 +881,17 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
-    publishNote(note);ntfyPublish(note);
+    if(note.img&&/^data:/.test(note.img)){
+      uploadImage(note.img,function(url){
+        if(url){
+          for(var k=0;k<notes.length;k++){if(notes[k].id===note.id)notes[k].img=url;}
+          note.img=url;saveNotes();
+        }
+        publishNote(note);ntfyPublish(note);renderNotes();
+      });
+    }else{
+      publishNote(note);ntfyPublish(note);
+    }
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
     resetBites();
     stage.classList.add('cake-away');
