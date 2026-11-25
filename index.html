@@ -515,7 +515,7 @@
   function saveNotes(){
     try{localStorage.setItem(KEY,JSON.stringify(notes));return true;}catch(e){return false;}
   }
-  var wallStatus=$('wallStatus'), SHARED_TOPIC='birthday18/siyu-2026-notes';
+  var wallStatus=$('wallStatus'), SHARED_TOPIC='birthday18/siyu-2026-notes-v2';
   var ADMIN_KEY='b18-admin-8d41f6c2', isAdmin=false;
   try{
     var adminParam=new URLSearchParams(location.search).get('admin');
@@ -539,10 +539,31 @@
   var mqttClient=null, sharedReady=false, brokerTimer=null;
   var BROKERS=['wss://broker.hivemq.com:8884/mqtt','wss://broker.hivemq.com:443/mqtt','wss://broker.emqx.io:8084/mqtt'];
   function setWallStatus(text){if(wallStatus)wallStatus.textContent=text+(isAdmin?'（管理模式）':'');}
-  function publishNotes(){
-    if(mqttClient&&mqttClient.connected){
-      try{mqttClient.publish(SHARED_TOPIC,JSON.stringify(notes),{qos:0,retain:true});}catch(e){}
+  var sharedGot=false;
+  function noteTopic(id){return SHARED_TOPIC+'/note/'+id;}
+  function publishNote(n){
+    if(mqttClient&&mqttClient.connected&&n&&n.id){
+      try{mqttClient.publish(noteTopic(n.id),JSON.stringify(n),{qos:0,retain:true});}catch(e){}
     }
+  }
+  function removeNoteTopic(id){
+    if(mqttClient&&mqttClient.connected&&id){
+      try{mqttClient.publish(noteTopic(id),'',{qos:0,retain:true});}catch(e){}
+    }
+  }
+  function mergeSharedNote(n){
+    if(!n||!n.id)return;
+    var found=false;
+    for(var i=0;i<notes.length;i++){
+      if(notes[i].id===n.id){notes[i]=n;found=true;break;}
+    }
+    if(!found)notes.push(n);
+    notes.sort(function(a,b){return String(a.time||'').localeCompare(String(b.time||''));});
+    saveNotes();renderNotes();
+  }
+  function seedShared(){
+    if(!mqttClient||!mqttClient.connected)return;
+    notes.forEach(function(n){publishNote(n);});
   }
   function initShared(index){
     if(typeof mqtt==='undefined'){
@@ -571,17 +592,24 @@
       mqttClient.on('connect',function(){
         connected=true;clearTimeout(brokerTimer);
         setWallStatus('已连接，实时同步中');
-        mqttClient.subscribe(SHARED_TOPIC,{qos:0},function(err){
+        mqttClient.subscribe(SHARED_TOPIC+'/note/+',{qos:0},function(err){
           if(err)return;
-          setTimeout(function(){if(!sharedReady)publishNotes();},1000);
+          setTimeout(function(){if(!sharedGot)seedShared();},1600);
         });
       });
       mqttClient.on('message',function(topic,payload){
-        if(topic!==SHARED_TOPIC)return;
+        var prefix=SHARED_TOPIC+'/note/';
+        if(topic.indexOf(prefix)!==0)return;
+        var id=topic.slice(prefix.length);
+        if(!payload.length){
+          notes=notes.filter(function(n){return n.id!==id;});
+          saveNotes();renderNotes();
+          return;
+        }
         try{
-          var arr=JSON.parse(payload.toString());
-          if(!Array.isArray(arr))return;
-          sharedReady=true;notes=arr.slice();saveNotes();renderNotes();
+          var n=JSON.parse(payload.toString());
+          if(!n||!n.id)return;
+          sharedGot=true;mergeSharedNote(n);
         }catch(e){}
       });
       mqttClient.on('error',function(){
@@ -793,7 +821,7 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
-    publishNotes();
+    publishNote(note);
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
     resetBites();
     stage.classList.add('cake-away');
@@ -819,14 +847,15 @@
   deleteBtn.addEventListener('click',function(){
     var back=detailFromAll;
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
-    saveNotes();publishNotes();closeModal(detailModal);detailFromAll=false;renderNotes();
+    saveNotes();removeNoteTopic(currentDetailId);closeModal(detailModal);detailFromAll=false;renderNotes();
     if(back)openAll();
     toast('这条祝福已经删除');
   });
   clearBtn.addEventListener('click',function(){
     if(!window.confirm('确定要清空所有祝福吗？此操作无法撤销。'))return;
+    notes.forEach(function(n){if(!n.demo)removeNoteTopic(n.id);});
     notes=notes.filter(function(n){return n.demo;});
-    saveNotes();publishNotes();closeModal(allModal);renderNotes();toast('已清空你写下的祝福');
+    saveNotes();closeModal(allModal);renderNotes();toast('已清空你写下的祝福');
   });
   $('copyLink').addEventListener('click',function(){
     var url=window.location.href.split('#')[0];
