@@ -584,7 +584,7 @@
   function onBite(){
     if(!eating)return;
     biteStage++;
-    burst(7);playBite();
+    burst(7);
     servePlate.classList.remove('munch');
     void servePlate.offsetWidth;
     servePlate.classList.add('munch');
@@ -650,24 +650,6 @@
       (function(node){setTimeout(function(){node.remove();},2100);})(s);
     }
   }
-  var audioCtx=null;
-  function playBite(){
-    try{
-      if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-      if(audioCtx.state==='suspended')audioCtx.resume();
-      var ctx=audioCtx,dur=.14,rate=ctx.sampleRate;
-      var buf=ctx.createBuffer(1,Math.floor(rate*dur),rate),data=buf.getChannelData(0);
-      for(var i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.4);
-      var src=ctx.createBufferSource();src.buffer=buf;
-      var filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=850+Math.random()*450;
-      var gain=ctx.createGain();
-      gain.gain.setValueAtTime(.18,ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
-      src.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
-      src.start();
-    }catch(e){}
-  }
-
   imageInput.addEventListener('change',function(e){
     var f=e.target.files&&e.target.files[0];
     if(!f)return;
