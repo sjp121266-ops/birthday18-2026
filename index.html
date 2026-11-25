@@ -536,22 +536,40 @@
       setWallStatus('已连接，实时同步中');
     }
   });
-  var mqttClient=null, sharedReady=false;
+  var mqttClient=null, sharedReady=false, brokerTimer=null;
+  var BROKERS=['wss://broker.hivemq.com:8884/mqtt','wss://broker.hivemq.com:443/mqtt','wss://broker.emqx.io:8084/mqtt'];
   function setWallStatus(text){if(wallStatus)wallStatus.textContent=text+(isAdmin?'（管理模式）':'');}
   function publishNotes(){
     if(mqttClient&&mqttClient.connected){
       try{mqttClient.publish(SHARED_TOPIC,JSON.stringify(notes),{qos:0,retain:true});}catch(e){}
     }
   }
-  function initShared(){
-    if(typeof mqtt==='undefined'){setWallStatus('离线，祝福暂存在本机');return;}
-    setWallStatus('正在连接祝福墙…');
+  function initShared(index){
+    if(typeof mqtt==='undefined'){
+      setWallStatus('正在加载祝福墙…');
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/mqtt@4.3.8/dist/mqtt.min.js';
+      s.onload=function(){initShared(0);};
+      s.onerror=function(){setWallStatus('离线，祝福暂存在本机');};
+      document.head.appendChild(s);
+      return;
+    }
+    var idx=index||0;
+    if(idx>=BROKERS.length){setWallStatus('离线，祝福暂存在本机');return;}
+    setWallStatus('正在连接祝福墙…（'+(idx+1)+'/'+BROKERS.length+'）');
     try{
-      mqttClient=mqtt.connect('wss://broker.hivemq.com:8884/mqtt',{
+      if(mqttClient){try{mqttClient.end(true);}catch(e){}mqttClient=null;}
+      var connected=false;
+      mqttClient=mqtt.connect(BROKERS[idx],{
         clientId:'b18-'+Math.random().toString(16).slice(2,10),
-        clean:true,reconnectPeriod:4000,connectTimeout:10000
+        clean:true,reconnectPeriod:4000,connectTimeout:8000
       });
+      clearTimeout(brokerTimer);
+      brokerTimer=setTimeout(function(){
+        if(!connected){try{mqttClient.end(true);}catch(e){}initShared(idx+1);}
+      },9000);
       mqttClient.on('connect',function(){
+        connected=true;clearTimeout(brokerTimer);
         setWallStatus('已连接，实时同步中');
         mqttClient.subscribe(SHARED_TOPIC,{qos:0},function(err){
           if(err)return;
@@ -566,10 +584,13 @@
           sharedReady=true;notes=arr.slice();saveNotes();renderNotes();
         }catch(e){}
       });
-      mqttClient.on('offline',function(){setWallStatus('离线，祝福暂存在本机');});
-      mqttClient.on('error',function(){setWallStatus('离线，祝福暂存在本机');});
+      mqttClient.on('error',function(){
+        if(!connected){clearTimeout(brokerTimer);try{mqttClient.end(true);}catch(e){}initShared(idx+1);}
+        else setWallStatus('连接中断，正在重连…');
+      });
+      mqttClient.on('offline',function(){if(connected)setWallStatus('连接中断，正在重连…');});
       mqttClient.on('reconnect',function(){setWallStatus('正在重连祝福墙…');});
-    }catch(e){setWallStatus('离线，祝福暂存在本机');}
+    }catch(e){initShared(idx+1);}
   }
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
