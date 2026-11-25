@@ -621,9 +621,11 @@
       btn.type='button';btn.className='note';
       if(wallMode){
         var col=i%perRow,row=Math.floor(i/perRow);
-        btn.style.left=(3+col*(94/perRow)+(((i*17)%9)-4)*0.7)+'%';
-        btn.style.top=(14+row*150+((i*29)%26))+'px';
-        btn.style.setProperty('--rot',(((i*23)%17)-8)+'deg');
+        var leftBase=col===0?0:44;
+        btn.style.left=(leftBase+((i*37)%32))+'%';
+        btn.style.top=(12+row*150+((i*53)%58))+'px';
+        btn.style.setProperty('--rot',(((i*31)%25)-12)+'deg');
+        btn.style.width=((window.innerWidth<700?104:150)+((i*13)%22))+'px';
       }else{
         var s=slots[order[i%order.length]];
         btn.style.left=s.l;btn.style.top=s.t;btn.style.setProperty('--rot',s.r+'deg');
