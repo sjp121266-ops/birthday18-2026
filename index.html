@@ -81,15 +81,12 @@
   .note-text{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
     font-size:12px;line-height:1.65;color:#5C4A43}
   .note-img{display:block;width:100%;height:44px;margin-top:8px;border-radius:8px;background-size:cover;background-position:center}
-  .note-more{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);white-space:nowrap;
-    font-size:11px;color:#A8897E}
   .notes-canvas{position:absolute;inset:0}
   .stage.cake-away .cake-slot{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(28px)}
   .stage.cake-away .notes-layer{overflow-y:auto;pointer-events:auto;
     scrollbar-width:thin;scrollbar-color:rgba(190,150,130,.35) transparent}
   .stage.cake-away .notes-layer::-webkit-scrollbar{width:6px}
   .stage.cake-away .notes-layer::-webkit-scrollbar-thumb{background:rgba(190,150,130,.35);border-radius:99px}
-  .stage.cake-away .note-more{display:none}
 
   .cake-slot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(440px,94vw);z-index:5}
   .cake-button{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;position:relative}
@@ -108,9 +105,6 @@
   .sparkle.s2{animation-delay:-.9s}.sparkle.s3{animation-delay:-1.7s}
   @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}
 
-  .reset{display:block;margin:8px auto 0;border:1px solid var(--line);background:rgba(255,255,255,.65);
-    color:#9A7F74;border-radius:999px;padding:8px 16px;font-size:12px;cursor:pointer;transition:.2s}
-  .reset:hover{background:#fff;color:var(--rose-deep)}
   .bottom{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:18px}
   .ghost{border:1px solid rgba(214,154,147,.3);background:rgba(255,255,255,.6);color:#A57D76;
     border-radius:999px;padding:10px 20px;font-size:12px;cursor:pointer;transition:.2s}
@@ -384,7 +378,6 @@
           </svg>
         </span>
       </button>
-      <button class="reset" id="resetBtn" type="button" hidden>重写一个</button>
     </div>
   </section>
 
@@ -493,7 +486,7 @@
 
   var $ = function(id){return document.getElementById(id);};
   var notesLayer=$('notesLayer'), notesCanvas=$('notesCanvas'), cakeBtn=$('cakeBtn'), cakeArt=$('cakeArt');
-  var hint=$('hint'), resetBtn=$('resetBtn'), allBtn=$('allBtn'), countEl=$('count');
+  var hint=$('hint'), allBtn=$('allBtn'), countEl=$('count');
   var formModal=$('formModal'), detailModal=$('detailModal'), allModal=$('allModal');
   var nameInput=$('nameInput'), textInput=$('textInput'), imageInput=$('imageInput');
   var preview=$('preview'), previewWrap=$('previewWrap'), submitBtn=$('submitBtn');
@@ -642,11 +635,6 @@
       btn.addEventListener('click',function(){openDetail(n.id);});
       notesCanvas.appendChild(btn);
     });
-    if(!wallMode&&notes.length>visible.length){
-      var more=document.createElement('button');more.type='button';more.className='ghost note-more';
-      more.textContent='还有 '+(notes.length-visible.length)+' 条祝福';
-      more.addEventListener('click',openAll);notesCanvas.appendChild(more);
-    }
     countEl.textContent=notes.length;
     allBtn.hidden=notes.length===0;
   }
@@ -786,23 +774,15 @@
 
   cakeBtn.addEventListener('click',function(){
     if(cut)return;
-    cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
+    cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;
     burst();serveCake();
   });
   servePlate.addEventListener('click',onBite);
-  resetBtn.addEventListener('click',function(){
-    if(stage.classList.contains('cake-away')){openForm();return;}
-    clearTimeout(openFormTimer);
-    cut=false;cakeArt.classList.remove('cut');cakeBtn.disabled=false;hint.hidden=false;resetBtn.hidden=true;
-    eating=false;serveScene.classList.remove('show','eating');
-    resetBites();
-    closeAll();
-  });
   allBtn.addEventListener('click',openAll);
   $('writeBtn').addEventListener('click',function(){
     if(stage.classList.contains('cake-away')){openForm();return;}
     if(!cut){
-      cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
+      cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;
       burst();
     }
     serveCake();
