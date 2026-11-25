@@ -539,8 +539,50 @@
   var mqttClient=null, sharedReady=false, brokerTimer=null;
   var BROKERS=['wss://broker.hivemq.com:8884/mqtt','wss://broker.hivemq.com:443/mqtt','wss://broker.emqx.io:8084/mqtt'];
   function setWallStatus(text){if(wallStatus)wallStatus.textContent=text+(isAdmin?'（管理模式）':'');}
-  var sharedGot=false;
+  var sharedGot=false, ntfyOnline=false, NTFY_TOPIC='birthday18-siyu-2026-9f4c2a7e';
   function noteTopic(id){return SHARED_TOPIC+'/note/'+id;}
+  function ntfyApply(data){
+    if(!data||data.event!=='message')return;
+    var obj=null;
+    try{obj=JSON.parse(data.message);}catch(e){return;}
+    if(!obj)return;
+    if(obj.type==='delete'&&obj.id){
+      notes=notes.filter(function(n){return n.id!==obj.id;});
+      saveNotes();renderNotes();return;
+    }
+    var n=obj.note||obj;
+    if(!n||!n.id)return;
+    mergeSharedNote(n);
+  }
+  function ntfyPoll(since){
+    fetch('https://ntfy.sh/'+NTFY_TOPIC+'/json?poll=1&since='+(since||'12h'),{cache:'no-store'})
+      .then(function(r){return r.text();})
+      .then(function(txt){
+        ntfyOnline=true;
+        if(!mqttClient||!mqttClient.connected)setWallStatus('已连接（HTTPS 同步）');
+        txt.split('\n').forEach(function(line){
+          if(!line.trim())return;
+          try{ntfyApply(JSON.parse(line));}catch(e){}
+        });
+      }).catch(function(){if(!mqttClient||!mqttClient.connected)setWallStatus('离线，祝福暂存在本机');});
+  }
+  function initNtfy(){
+    ntfyPoll('12h');
+    try{
+      var es=new EventSource('https://ntfy.sh/'+NTFY_TOPIC+'/sse');
+      es.onmessage=function(ev){try{ntfyApply(JSON.parse(ev.data));}catch(e){}};
+    }catch(e){}
+    setInterval(function(){ntfyPoll('2m');},15000);
+  }
+  function ntfyPublish(note){
+    if(!note||!note.id)return;
+    var out={id:note.id,name:note.name,text:note.text,time:note.time,img:''};
+    fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'POST',body:JSON.stringify(out)}).catch(function(){});
+  }
+  function ntfyDelete(id){
+    if(!id)return;
+    fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'POST',body:JSON.stringify({type:'delete',id:id})}).catch(function(){});
+  }
   function publishNote(n){
     if(mqttClient&&mqttClient.connected&&n&&n.id){
       try{mqttClient.publish(noteTopic(n.id),JSON.stringify(n),{qos:0,retain:true});}catch(e){}
@@ -555,7 +597,7 @@
     if(!n||!n.id)return;
     var found=false;
     for(var i=0;i<notes.length;i++){
-      if(notes[i].id===n.id){notes[i]=n;found=true;break;}
+      if(notes[i].id===n.id){if(!n.img&&notes[i].img)n.img=notes[i].img;notes[i]=n;found=true;break;}
     }
     if(!found)notes.push(n);
     notes.sort(function(a,b){return String(a.time||'').localeCompare(String(b.time||''));});
@@ -576,7 +618,7 @@
       return;
     }
     var idx=index||0;
-    if(idx>=BROKERS.length){setWallStatus('离线，祝福暂存在本机');return;}
+    if(idx>=BROKERS.length){if(!ntfyOnline)setWallStatus('离线，祝福暂存在本机');return;}
     setWallStatus('正在连接祝福墙…（'+(idx+1)+'/'+BROKERS.length+'）');
     try{
       if(mqttClient){try{mqttClient.end(true);}catch(e){}mqttClient=null;}
@@ -614,9 +656,9 @@
       });
       mqttClient.on('error',function(){
         if(!connected){clearTimeout(brokerTimer);try{mqttClient.end(true);}catch(e){}initShared(idx+1);}
-        else setWallStatus('连接中断，正在重连…');
+        else if(!ntfyOnline)setWallStatus('连接中断，正在重连…');
       });
-      mqttClient.on('offline',function(){if(connected)setWallStatus('连接中断，正在重连…');});
+      mqttClient.on('offline',function(){if(connected&&!ntfyOnline)setWallStatus('连接中断，正在重连…');});
       mqttClient.on('reconnect',function(){setWallStatus('正在重连祝福墙…');});
     }catch(e){initShared(idx+1);}
   }
@@ -821,7 +863,7 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
-    publishNote(note);
+    publishNote(note);ntfyPublish(note);
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
     resetBites();
     stage.classList.add('cake-away');
@@ -847,13 +889,13 @@
   deleteBtn.addEventListener('click',function(){
     var back=detailFromAll;
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
-    saveNotes();removeNoteTopic(currentDetailId);closeModal(detailModal);detailFromAll=false;renderNotes();
+    saveNotes();removeNoteTopic(currentDetailId);ntfyDelete(currentDetailId);closeModal(detailModal);detailFromAll=false;renderNotes();
     if(back)openAll();
     toast('这条祝福已经删除');
   });
   clearBtn.addEventListener('click',function(){
     if(!window.confirm('确定要清空所有祝福吗？此操作无法撤销。'))return;
-    notes.forEach(function(n){if(!n.demo)removeNoteTopic(n.id);});
+    notes.forEach(function(n){if(!n.demo){removeNoteTopic(n.id);ntfyDelete(n.id);}});
     notes=notes.filter(function(n){return n.demo;});
     saveNotes();closeModal(allModal);renderNotes();toast('已清空你写下的祝福');
   });
@@ -900,6 +942,7 @@
   setCountdown();
   renderNotes();
   initShared();
+  initNtfy();
 })();
 </script>
 </body>
