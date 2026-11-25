@@ -105,6 +105,26 @@
   .ghost:hover{background:#fff;color:var(--rose-deep);transform:translateY(-1px)}
   .foot-note{margin:14px 0 0;font-size:11px;color:#B29C91;letter-spacing:.06em}
 
+  .serve-scene{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+    gap:22px;padding:20px;pointer-events:none;opacity:0;visibility:hidden;
+    transition:opacity .5s ease,visibility .5s ease}
+  .serve-scene.show{opacity:1;visibility:visible}
+  .serve-plate{width:min(300px,64vw);filter:drop-shadow(0 22px 26px rgba(130,96,80,.18))}
+  .serve-scene.show .serve-plate{animation:servePlate 1.05s cubic-bezier(.2,.86,.28,1) both}
+  .serve-text{font-family:Georgia,"Songti SC","STSong",serif;font-size:clamp(17px,3.2vw,25px);
+    letter-spacing:.07em;color:#A4766E;white-space:nowrap;text-shadow:0 2px 12px rgba(255,255,255,.95);
+    margin-left:64px}
+  .serve-scene.show .serve-text{animation:serveText .7s .42s both}
+  @keyframes servePlate{
+    0%{transform:translateY(-110px) scale(.42) rotate(-9deg);opacity:0}
+    55%{transform:translateY(22px) scale(1.07) rotate(3deg);opacity:1}
+    100%{transform:translateY(0) scale(1) rotate(0);opacity:1}
+  }
+  @keyframes serveText{
+    0%{opacity:0;transform:translateX(-14px)}
+    100%{opacity:1;transform:translateX(0)}
+  }
+
   .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:18px;
     background:rgba(72,54,46,.26);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
     opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
@@ -178,6 +198,9 @@
     .note-text{font-size:10px;line-height:1.5;-webkit-line-clamp:3}
     .note-img{height:30px;margin-top:5px}
     .cake-slot{width:min(360px,96vw)}
+    .serve-scene{flex-direction:column;gap:8px}
+    .serve-plate{width:min(270px,78vw)}
+    .serve-text{font-size:17px;margin-left:0}
     .dialog{padding:24px 20px 22px;border-radius:20px}
     .bottom{gap:10px}
   }
@@ -347,11 +370,48 @@
   <p class="foot-note">祝福会保存在你自己的设备上，点开即可写下这一刻</p>
 </main>
 
+<div class="serve-scene" id="serveScene" aria-hidden="true">
+  <div class="serve-plate">
+    <svg viewBox="0 0 280 180" role="img" aria-label="纸盘里的一块生日蛋糕">
+      <defs>
+        <linearGradient id="servedCake" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFF7EF"/><stop offset="1" stop-color="#F1D5C2"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="150" rx="120" ry="26" fill="#B99C8A" opacity=".14"/>
+      <ellipse cx="140" cy="138" rx="122" ry="34" fill="#EDE1D7"/>
+      <ellipse cx="140" cy="132" rx="122" ry="33" fill="#FFFDF9" stroke="#EADFD5" stroke-width="2"/>
+      <ellipse cx="140" cy="131" rx="97" ry="24" fill="#FAF3EC"/>
+      <g stroke="#E8DCD1" stroke-width="2" stroke-linecap="round" opacity=".9">
+        <path d="M22 132 l8 0 M36 116 l6 4 M55 105 l4 6 M78 98 l2 7 M102 94 l0 7 M126 92 l0 7 M150 92 l0 7 M174 94 l0 7 M198 98 l-2 7 M221 105 l-4 6 M240 116 l-6 4 M254 132 l-8 0 M240 148 l-6 -4 M221 159 l-4 -6 M198 166 l-2 -7 M174 170 l0 -7 M150 172 l0 -7 M126 172 l0 -7 M102 170 l0 -7 M78 166 l2 -7 M55 159 l4 -6 M36 148 l6 -4"/>
+      </g>
+      <g class="served-slice">
+        <path d="M62 112 L182 112 L122 150 Z" fill="url(#servedCake)"/>
+        <path d="M122 150 L182 112 L182 122 L122 154 Z" fill="#E9CCB9"/>
+        <path d="M62 112 L182 112 L122 150 Z" fill="none" stroke="#E7C6B4" stroke-opacity=".6"/>
+        <path d="M62 105 L182 105 L182 112 L62 112 Z" fill="#FFF8F1"/>
+        <g fill="#FFF8F1">
+          <circle cx="70" cy="112" r="8"/><circle cx="94" cy="112" r="8"/>
+          <circle cx="118" cy="112" r="8"/><circle cx="142" cy="112" r="8"/>
+          <circle cx="166" cy="112" r="8"/>
+        </g>
+        <g fill="#D9A79C" opacity=".8">
+          <rect x="92" y="128" width="4" height="8" rx="2" transform="rotate(26 94 132)"/>
+          <rect x="116" y="138" width="4" height="8" rx="2" transform="rotate(-24 118 142)"/>
+        </g>
+        <circle cx="172" cy="101" r="8" fill="#E78E93"/>
+        <path d="M176 95 C181 91 187 92 189 96 C185 101 179 100 176 95Z" fill="#A9BEA3"/>
+      </g>
+    </svg>
+  </div>
+  <div class="serve-text">宋思宇请你吃蛋糕</div>
+</div>
+
 <div class="modal" id="formModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
   <div class="dialog">
     <button class="close-x" type="button" data-close aria-label="关闭">×</button>
     <h2 id="formTitle">留一句祝福给十八岁的你</h2>
-    <p class="desc">蛋糕已经切开了，把这一刻的话和照片放在它后面吧。</p>
+    <p class="desc">蛋糕已经端到你面前了，把这一刻的话和照片留在这里吧。</p>
     <form id="blessForm">
       <label class="field"><span>你的名字（可不填）</span>
         <input type="text" id="nameInput" maxlength="16" placeholder="例如：小满"></label>
@@ -412,8 +472,8 @@
   var nameInput=$('nameInput'), textInput=$('textInput'), imageInput=$('imageInput');
   var preview=$('preview'), previewWrap=$('previewWrap'), submitBtn=$('submitBtn');
   var detailBody=$('detailBody'), detailTitle=$('detailTitle'), allList=$('allList');
-  var toastEl=$('toast'), deleteBtn=$('deleteBtn'), clearBtn=$('clearBtn');
-  var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null;
+  var toastEl=$('toast'), deleteBtn=$('deleteBtn'), clearBtn=$('clearBtn'), serveScene=$('serveScene');
+  var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null, serveTimer=null;
 
   function loadNotes(){
     try{
@@ -483,8 +543,14 @@
   }
   function openModal(el){el.classList.add('show');}
   function closeModal(el){el.classList.remove('show');}
-  function closeAll(){closeModal(formModal);closeModal(detailModal);closeModal(allModal);}
+  function closeAll(){closeModal(formModal);closeModal(detailModal);closeModal(allModal);serveScene.classList.remove('show');}
 
+  function serveCake(){
+    clearTimeout(serveTimer);
+    serveScene.classList.remove('show');
+    void serveScene.offsetWidth;
+    serveScene.classList.add('show');
+  }
   function openForm(){clearForm();openModal(formModal);setTimeout(function(){textInput.focus();},320);}
   function clearForm(){
     nameInput.value='';textInput.value='';imageInput.value='';pendingImg='';
@@ -567,22 +633,28 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
-    closeModal(formModal);renderNotes();burst();
+    closeModal(formModal);serveScene.classList.remove('show');renderNotes();burst();
     toast(saved?'祝福已经落在蛋糕后面了':'祝福已显示，本机存储空间不足，照片未保存');
   });
 
   cakeBtn.addEventListener('click',function(){
     if(cut)return;
     cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
-    burst();setTimeout(openForm,760);
+    burst();serveCake();serveTimer=setTimeout(openForm,1850);
   });
   resetBtn.addEventListener('click',function(){
-    cut=false;cakeArt.classList.remove('cut');cakeBtn.disabled=false;hint.hidden=false;resetBtn.hidden=true;closeAll();
+    clearTimeout(serveTimer);
+    cut=false;cakeArt.classList.remove('cut');cakeBtn.disabled=false;hint.hidden=false;resetBtn.hidden=true;
+    serveScene.classList.remove('show');closeAll();
   });
   allBtn.addEventListener('click',openAll);
   $('writeBtn').addEventListener('click',function(){
-    if(!cut){cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;burst();}
-    openForm();
+    if(!cut){
+      cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
+      burst();serveCake();serveTimer=setTimeout(openForm,1850);
+    }else{
+      serveCake();serveTimer=setTimeout(openForm,500);
+    }
   });
   deleteBtn.addEventListener('click',function(){
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
