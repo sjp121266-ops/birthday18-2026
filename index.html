@@ -109,8 +109,15 @@
     gap:22px;padding:20px;pointer-events:none;opacity:0;visibility:hidden;
     transition:opacity .5s ease,visibility .5s ease}
   .serve-scene.show{opacity:1;visibility:visible}
-  .serve-plate{width:min(300px,64vw);filter:drop-shadow(0 22px 26px rgba(130,96,80,.18))}
+  .serve-plate{position:relative;width:min(300px,64vw);filter:drop-shadow(0 22px 26px rgba(130,96,80,.18))}
   .serve-scene.show .serve-plate{animation:servePlate 1.05s cubic-bezier(.2,.86,.28,1) both}
+  .serve-scene.eating .serve-plate{pointer-events:auto;cursor:pointer}
+  .serve-scene.eating .serve-plate:hover{filter:drop-shadow(0 18px 24px rgba(185,135,118,.28))}
+  .served-slice{transition:clip-path .35s ease,opacity .4s ease}
+  .bite-hint{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);white-space:nowrap;
+    font-size:12px;color:#A57D76;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 13px;
+    box-shadow:0 8px 20px rgba(130,96,80,.12);opacity:0;transition:opacity .3s ease}
+  .serve-scene.eating .bite-hint{opacity:1}
   .serve-text{font-family:Georgia,"Songti SC","STSong",serif;font-size:clamp(17px,3.2vw,25px);
     letter-spacing:.07em;color:#A4766E;white-space:nowrap;text-shadow:0 2px 12px rgba(255,255,255,.95);
     margin-left:64px}
@@ -259,6 +266,30 @@
               <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="9"/>
               </filter>
+              <g id="cakeSliceArt">
+                <rect x="248" y="118" width="52" height="54" rx="10" fill="url(#pink)"/>
+                <g fill="#FFF8F1">
+                  <rect x="248" y="110" width="52" height="18" rx="8"/>
+                  <circle cx="252" cy="128" r="8"/><circle cx="272" cy="128" r="8"/><circle cx="292" cy="128" r="8"/>
+                </g>
+                <g fill="#FFFFFF" opacity=".7">
+                  <rect x="262" y="146" width="4" height="8" rx="2" transform="rotate(-22 264 150)"/>
+                  <rect x="284" y="152" width="4" height="8" rx="2" transform="rotate(26 286 156)"/>
+                </g>
+                <rect x="248" y="168" width="96" height="92" rx="14" fill="url(#cream)"/>
+                <rect x="248.5" y="168.5" width="95" height="91" rx="13.5" fill="none" stroke="#E8C9B6" stroke-opacity=".5"/>
+                <g fill="#FFF8F1">
+                  <rect x="248" y="160" width="96" height="20" rx="9"/>
+                  <circle cx="252" cy="180" r="10"/><circle cx="280" cy="180" r="10"/>
+                  <circle cx="308" cy="180" r="10"/><circle cx="332" cy="180" r="10"/>
+                </g>
+                <g fill="#D9A79C" opacity=".75">
+                  <rect x="270" y="210" width="4" height="10" rx="2" transform="rotate(28 272 215)"/>
+                  <rect x="300" y="238" width="4" height="10" rx="2" transform="rotate(-24 302 243)"/>
+                </g>
+                <path d="M278 108 C274 101 276 96 282 96 C288 96 290 101 286 108 Z" fill="#E78E93"/>
+                <path d="M283 95 C289 90 296 92 298 96 C294 101 287 100 283 95Z" fill="#A9BEA3"/>
+              </g>
             </defs>
 
             <ellipse cx="220" cy="188" rx="188" ry="142" fill="url(#halo)"/>
@@ -332,30 +363,7 @@
               <rect x="248.5" y="168" width="7" height="92" rx="3" fill="#FFFFFF" opacity=".38"/>
             </g>
 
-            <g class="slice">
-              <rect x="248" y="118" width="52" height="54" rx="10" fill="url(#pink)"/>
-              <g fill="#FFF8F1">
-                <rect x="248" y="110" width="52" height="18" rx="8"/>
-                <circle cx="252" cy="128" r="8"/><circle cx="272" cy="128" r="8"/><circle cx="292" cy="128" r="8"/>
-              </g>
-              <g fill="#FFFFFF" opacity=".7">
-                <rect x="262" y="146" width="4" height="8" rx="2" transform="rotate(-22 264 150)"/>
-                <rect x="284" y="152" width="4" height="8" rx="2" transform="rotate(26 286 156)"/>
-              </g>
-              <rect x="248" y="168" width="96" height="92" rx="14" fill="url(#cream)"/>
-              <rect x="248.5" y="168.5" width="95" height="91" rx="13.5" fill="none" stroke="#E8C9B6" stroke-opacity=".5"/>
-              <g fill="#FFF8F1">
-                <rect x="248" y="160" width="96" height="20" rx="9"/>
-                <circle cx="252" cy="180" r="10"/><circle cx="280" cy="180" r="10"/>
-                <circle cx="308" cy="180" r="10"/><circle cx="332" cy="180" r="10"/>
-              </g>
-              <g fill="#D9A79C" opacity=".75">
-                <rect x="270" y="210" width="4" height="10" rx="2" transform="rotate(28 272 215)"/>
-                <rect x="300" y="238" width="4" height="10" rx="2" transform="rotate(-24 302 243)"/>
-              </g>
-              <path d="M278 108 C274 101 276 96 282 96 C288 96 290 101 286 108 Z" fill="#E78E93"/>
-              <path d="M283 95 C289 90 296 92 298 96 C294 101 287 100 283 95Z" fill="#A9BEA3"/>
-            </g>
+            <g class="slice"><use href="#cakeSliceArt"></use></g>
           </svg>
         </span>
       </button>
@@ -371,38 +379,20 @@
 </main>
 
 <div class="serve-scene" id="serveScene" aria-hidden="true">
-  <div class="serve-plate">
-    <svg viewBox="0 0 280 180" role="img" aria-label="纸盘里的一块生日蛋糕">
-      <defs>
-        <linearGradient id="servedCake" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#FFF7EF"/><stop offset="1" stop-color="#F1D5C2"/>
-        </linearGradient>
-      </defs>
-      <ellipse cx="140" cy="150" rx="120" ry="26" fill="#B99C8A" opacity=".14"/>
-      <ellipse cx="140" cy="138" rx="122" ry="34" fill="#EDE1D7"/>
-      <ellipse cx="140" cy="132" rx="122" ry="33" fill="#FFFDF9" stroke="#EADFD5" stroke-width="2"/>
-      <ellipse cx="140" cy="131" rx="97" ry="24" fill="#FAF3EC"/>
+  <div class="serve-plate" id="servePlate">
+    <svg viewBox="0 0 300 210" role="img" aria-label="纸盘里那块刚切下来的生日蛋糕">
+      <ellipse cx="152" cy="188" rx="122" ry="24" fill="#B99C8A" opacity=".14"/>
+      <ellipse cx="150" cy="178" rx="126" ry="34" fill="#EDE1D7"/>
+      <ellipse cx="150" cy="172" rx="126" ry="33" fill="#FFFDF9" stroke="#EADFD5" stroke-width="2"/>
+      <ellipse cx="150" cy="171" rx="99" ry="24" fill="#FAF3EC"/>
       <g stroke="#E8DCD1" stroke-width="2" stroke-linecap="round" opacity=".9">
-        <path d="M22 132 l8 0 M36 116 l6 4 M55 105 l4 6 M78 98 l2 7 M102 94 l0 7 M126 92 l0 7 M150 92 l0 7 M174 94 l0 7 M198 98 l-2 7 M221 105 l-4 6 M240 116 l-6 4 M254 132 l-8 0 M240 148 l-6 -4 M221 159 l-4 -6 M198 166 l-2 -7 M174 170 l0 -7 M150 172 l0 -7 M126 172 l0 -7 M102 170 l0 -7 M78 166 l2 -7 M55 159 l4 -6 M36 148 l6 -4"/>
+        <path d="M29 172 l8 0 M43 155 l6 4 M63 143 l4 6 M87 135 l2 7 M112 131 l0 7 M137 129 l0 7 M162 129 l0 7 M187 131 l0 7 M212 135 l-2 7 M236 143 l-4 6 M256 155 l-6 4 M270 172 l-8 0 M256 189 l-6 -4 M236 201 l-4 -6 M212 209 l-2 -7 M187 213 l0 -7 M162 215 l0 -7 M137 215 l0 -7 M112 213 l0 -7 M87 209 l2 -7 M63 201 l4 -6 M43 189 l6 -4"/>
       </g>
-      <g class="served-slice">
-        <path d="M62 112 L182 112 L122 150 Z" fill="url(#servedCake)"/>
-        <path d="M122 150 L182 112 L182 122 L122 154 Z" fill="#E9CCB9"/>
-        <path d="M62 112 L182 112 L122 150 Z" fill="none" stroke="#E7C6B4" stroke-opacity=".6"/>
-        <path d="M62 105 L182 105 L182 112 L62 112 Z" fill="#FFF8F1"/>
-        <g fill="#FFF8F1">
-          <circle cx="70" cy="112" r="8"/><circle cx="94" cy="112" r="8"/>
-          <circle cx="118" cy="112" r="8"/><circle cx="142" cy="112" r="8"/>
-          <circle cx="166" cy="112" r="8"/>
-        </g>
-        <g fill="#D9A79C" opacity=".8">
-          <rect x="92" y="128" width="4" height="8" rx="2" transform="rotate(26 94 132)"/>
-          <rect x="116" y="138" width="4" height="8" rx="2" transform="rotate(-24 118 142)"/>
-        </g>
-        <circle cx="172" cy="101" r="8" fill="#E78E93"/>
-        <path d="M176 95 C181 91 187 92 189 96 C185 101 179 100 176 95Z" fill="#A9BEA3"/>
+      <g class="served-slice" id="servedSlice" transform="translate(-145,-80)">
+        <use href="#cakeSliceArt"></use>
       </g>
     </svg>
+    <span class="bite-hint" id="biteHint">点一下，吃一口 · 还剩 3 口</span>
   </div>
   <div class="serve-text">宋思宇请你吃蛋糕</div>
 </div>
@@ -472,8 +462,11 @@
   var nameInput=$('nameInput'), textInput=$('textInput'), imageInput=$('imageInput');
   var preview=$('preview'), previewWrap=$('previewWrap'), submitBtn=$('submitBtn');
   var detailBody=$('detailBody'), detailTitle=$('detailTitle'), allList=$('allList');
-  var toastEl=$('toast'), deleteBtn=$('deleteBtn'), clearBtn=$('clearBtn'), serveScene=$('serveScene');
-  var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null, serveTimer=null;
+  var toastEl=$('toast'), deleteBtn=$('deleteBtn'), clearBtn=$('clearBtn');
+  var serveScene=$('serveScene'), servePlate=$('servePlate'), servedSlice=$('servedSlice'), biteHint=$('biteHint');
+  var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null;
+  var MAX_BITES=3, biteStage=0, eating=false, openFormTimer=null;
+  var BITE_CLIPS=['inset(0 0 0 0)','inset(0 20% 0 0)','inset(0 46% 0 0)','inset(0 74% 0 0)'];
 
   function loadNotes(){
     try{
@@ -543,13 +536,35 @@
   }
   function openModal(el){el.classList.add('show');}
   function closeModal(el){el.classList.remove('show');}
-  function closeAll(){closeModal(formModal);closeModal(detailModal);closeModal(allModal);serveScene.classList.remove('show');}
+  function closeAll(){
+    clearTimeout(openFormTimer);
+    closeModal(formModal);closeModal(detailModal);closeModal(allModal);
+    eating=false;serveScene.classList.remove('show','eating');
+  }
 
   function serveCake(){
-    clearTimeout(serveTimer);
-    serveScene.classList.remove('show');
+    clearTimeout(openFormTimer);
+    biteStage=0;eating=true;
+    servedSlice.style.clipPath=BITE_CLIPS[0];
+    servedSlice.style.opacity='1';
+    biteHint.textContent='点一下，吃一口 · 还剩 '+MAX_BITES+' 口';
+    serveScene.classList.remove('show','eating');
     void serveScene.offsetWidth;
-    serveScene.classList.add('show');
+    serveScene.classList.add('show','eating');
+  }
+  function onBite(){
+    if(!eating)return;
+    biteStage++;
+    burst(7);
+    if(biteStage>=MAX_BITES){
+      eating=false;
+      serveScene.classList.remove('eating');
+      servedSlice.style.opacity='0';
+      openFormTimer=setTimeout(openForm,560);
+    }else{
+      servedSlice.style.clipPath=BITE_CLIPS[biteStage];
+      biteHint.textContent='点一下，吃一口 · 还剩 '+(MAX_BITES-biteStage)+' 口';
+    }
   }
   function openForm(){clearForm();openModal(formModal);setTimeout(function(){textInput.focus();},320);}
   function clearForm(){
@@ -582,9 +597,10 @@
     clearBtn.hidden=notes.every(function(n){return n.demo;});
     openModal(allModal);
   }
-  function burst(){
+  function burst(count){
     var colors=['#DCA69E','#E9CFA1','#AEC0A9','#F3DAD1','#D8B98D'];
-    for(var i=0;i<38;i++){
+    var total=count||38;
+    for(var i=0;i<total;i++){
       var s=document.createElement('span');s.className='confetti';
       s.style.left=(window.innerWidth/2+(Math.random()-.5)*90)+'px';
       s.style.top=(window.innerHeight*.58+(Math.random()-.5)*40)+'px';
@@ -633,28 +649,32 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
-    closeModal(formModal);serveScene.classList.remove('show');renderNotes();burst();
+    closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
+    servedSlice.style.clipPath=BITE_CLIPS[0];servedSlice.style.opacity='1';
+    renderNotes();burst();
     toast(saved?'祝福已经落在蛋糕后面了':'祝福已显示，本机存储空间不足，照片未保存');
   });
 
   cakeBtn.addEventListener('click',function(){
     if(cut)return;
     cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
-    burst();serveCake();serveTimer=setTimeout(openForm,1850);
+    burst();serveCake();
   });
+  servePlate.addEventListener('click',onBite);
   resetBtn.addEventListener('click',function(){
-    clearTimeout(serveTimer);
+    clearTimeout(openFormTimer);
     cut=false;cakeArt.classList.remove('cut');cakeBtn.disabled=false;hint.hidden=false;resetBtn.hidden=true;
-    serveScene.classList.remove('show');closeAll();
+    eating=false;serveScene.classList.remove('show','eating');
+    servedSlice.style.clipPath=BITE_CLIPS[0];servedSlice.style.opacity='1';
+    closeAll();
   });
   allBtn.addEventListener('click',openAll);
   $('writeBtn').addEventListener('click',function(){
     if(!cut){
       cut=true;cakeArt.classList.add('cut');cakeBtn.disabled=true;hint.hidden=true;resetBtn.hidden=false;
-      burst();serveCake();serveTimer=setTimeout(openForm,1850);
-    }else{
-      serveCake();serveTimer=setTimeout(openForm,500);
+      burst();
     }
+    serveCake();
   });
   deleteBtn.addEventListener('click',function(){
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
