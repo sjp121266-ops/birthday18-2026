@@ -454,7 +454,7 @@
     <button class="close-x" type="button" data-close aria-label="关闭">×</button>
     <h2 id="detailTitle">一句祝福</h2>
     <div id="detailBody"></div>
-    <button class="danger" id="deleteBtn" type="button">删除这条祝福</button>
+    <button class="danger" id="deleteBtn" type="button" hidden>删除这条祝福</button>
   </div>
 </div>
 
@@ -464,7 +464,7 @@
     <h2 id="allTitle">全部祝福</h2>
     <p class="desc">点开任意一条，可以看完整内容和照片。</p>
     <div class="link-list" id="allList"></div>
-    <button class="danger" id="clearBtn" type="button">清空全部祝福</button>
+    <button class="danger" id="clearBtn" type="button" hidden>清空全部祝福</button>
   </div>
 </div>
 
@@ -507,8 +507,14 @@
     try{localStorage.setItem(KEY,JSON.stringify(notes));return true;}catch(e){return false;}
   }
   var wallStatus=$('wallStatus'), SHARED_TOPIC='birthday18/siyu-2026-notes';
+  var ADMIN_KEY='b18-admin-8d41f6c2', isAdmin=false;
+  try{
+    var adminParam=new URLSearchParams(location.search).get('admin');
+    if(adminParam===ADMIN_KEY){localStorage.setItem('b18_admin',ADMIN_KEY);history.replaceState(null,'',location.pathname);}
+    isAdmin=localStorage.getItem('b18_admin')===ADMIN_KEY;
+  }catch(e){}
   var mqttClient=null, sharedReady=false;
-  function setWallStatus(text){if(wallStatus)wallStatus.textContent=text;}
+  function setWallStatus(text){if(wallStatus)wallStatus.textContent=text+(isAdmin?'（管理模式）':'');}
   function publishNotes(){
     if(mqttClient&&mqttClient.connected){
       try{mqttClient.publish(SHARED_TOPIC,JSON.stringify(notes),{qos:0,retain:true});}catch(e){}
@@ -655,7 +661,7 @@
     if(n.img){var img=document.createElement('img');img.className='detail-img';img.src=n.img;img.alt='祝福配图';detailBody.appendChild(img);}
     var p=document.createElement('div');p.className='detail-text';p.textContent=n.text;detailBody.appendChild(p);
     var meta=document.createElement('div');meta.className='detail-meta';meta.textContent=n.time||'';detailBody.appendChild(meta);
-    deleteBtn.hidden=!!n.demo;
+    deleteBtn.hidden=!isAdmin;
     openModal(detailModal);
   }
   function openAll(){
@@ -668,7 +674,7 @@
       b.addEventListener('click',function(){closeModal(allModal);openDetail(n.id);});
       allList.appendChild(b);
     });
-    clearBtn.hidden=notes.every(function(n){return n.demo;});
+    clearBtn.hidden=!isAdmin;
     openModal(allModal);
   }
   function burst(count){
