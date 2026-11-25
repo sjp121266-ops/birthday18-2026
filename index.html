@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBF7F2">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>十八岁，生日快乐 · 11.28</title>
 <style>
   :root{
@@ -513,6 +516,20 @@
     if(adminParam===ADMIN_KEY){localStorage.setItem('b18_admin',ADMIN_KEY);history.replaceState(null,'',location.pathname);}
     isAdmin=localStorage.getItem('b18_admin')===ADMIN_KEY;
   }catch(e){}
+  var adminTaps=0, adminTapTimer=null;
+  var brandMark=document.querySelector('.brand-mark');
+  if(brandMark)brandMark.addEventListener('click',function(){
+    adminTaps++;
+    clearTimeout(adminTapTimer);
+    adminTapTimer=setTimeout(function(){adminTaps=0;},4000);
+    if(adminTaps>=5){
+      adminTaps=0;
+      isAdmin=true;
+      try{localStorage.setItem('b18_admin',ADMIN_KEY);}catch(e){}
+      toast('已进入管理模式');
+      setWallStatus('已连接，实时同步中');
+    }
+  });
   var mqttClient=null, sharedReady=false;
   function setWallStatus(text){if(wallStatus)wallStatus.textContent=text+(isAdmin?'（管理模式）':'');}
   function publishNotes(){
