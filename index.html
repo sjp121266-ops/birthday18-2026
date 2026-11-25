@@ -398,19 +398,20 @@
       </g>
       <g class="bite-marks" aria-hidden="true">
         <g class="bite-mark" id="bite1">
-          <ellipse cx="212" cy="150" rx="21" ry="17" transform="rotate(-12 212 150)" fill="#FAF3EC"/>
-          <ellipse cx="202" cy="137" rx="13" ry="10" transform="rotate(18 202 137)" fill="#FAF3EC"/>
-          <circle cx="204" cy="165" r="11" fill="#FAF3EC"/>
+          <ellipse cx="148" cy="58" rx="42" ry="35" transform="rotate(-10 148 58)" fill="#FAF3EC"/>
+          <ellipse cx="124" cy="44" rx="24" ry="18" transform="rotate(20 124 44)" fill="#FAF3EC"/>
+          <circle cx="138" cy="80" r="20" fill="#FAF3EC"/>
+          <circle cx="133" cy="20" r="17" fill="#FAF3EC"/>
         </g>
         <g class="bite-mark" id="bite2">
-          <ellipse cx="198" cy="110" rx="23" ry="18" transform="rotate(14 198 110)" fill="#FAF3EC"/>
-          <ellipse cx="186" cy="98" rx="14" ry="11" transform="rotate(-20 186 98)" fill="#FAF3EC"/>
-          <circle cx="188" cy="126" r="12" fill="#FAF3EC"/>
+          <ellipse cx="186" cy="112" rx="50" ry="38" transform="rotate(12 186 112)" fill="#FAF3EC"/>
+          <ellipse cx="162" cy="96" rx="28" ry="21" transform="rotate(-18 162 96)" fill="#FAF3EC"/>
+          <circle cx="170" cy="134" r="24" fill="#FAF3EC"/>
         </g>
         <g class="bite-mark" id="bite3">
-          <ellipse cx="178" cy="152" rx="28" ry="22" transform="rotate(-8 178 152)" fill="#FAF3EC"/>
-          <ellipse cx="164" cy="137" rx="17" ry="13" transform="rotate(22 164 137)" fill="#FAF3EC"/>
-          <circle cx="167" cy="169" r="15" fill="#FAF3EC"/>
+          <ellipse cx="166" cy="160" rx="58" ry="42" transform="rotate(-8 166 160)" fill="#FAF3EC"/>
+          <ellipse cx="138" cy="141" rx="32" ry="23" transform="rotate(24 138 141)" fill="#FAF3EC"/>
+          <circle cx="148" cy="182" r="27" fill="#FAF3EC"/>
         </g>
       </g>
     </svg>
@@ -583,7 +584,7 @@
   function onBite(){
     if(!eating)return;
     biteStage++;
-    burst(7);
+    burst(7);playBite();
     servePlate.classList.remove('munch');
     void servePlate.offsetWidth;
     servePlate.classList.add('munch');
@@ -648,6 +649,23 @@
       document.body.appendChild(s);
       (function(node){setTimeout(function(){node.remove();},2100);})(s);
     }
+  }
+  var audioCtx=null;
+  function playBite(){
+    try{
+      if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==='suspended')audioCtx.resume();
+      var ctx=audioCtx,dur=.14,rate=ctx.sampleRate;
+      var buf=ctx.createBuffer(1,Math.floor(rate*dur),rate),data=buf.getChannelData(0);
+      for(var i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.4);
+      var src=ctx.createBufferSource();src.buffer=buf;
+      var filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=850+Math.random()*450;
+      var gain=ctx.createGain();
+      gain.gain.setValueAtTime(.18,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
+      src.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+      src.start();
+    }catch(e){}
   }
 
   imageInput.addEventListener('change',function(e){
