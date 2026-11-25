@@ -454,7 +454,7 @@
 
 <div class="modal" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="dialog">
-    <button class="close-x" type="button" data-close aria-label="关闭">×</button>
+    <button class="close-x" type="button" data-close="detail" aria-label="关闭">×</button>
     <h2 id="detailTitle">一句祝福</h2>
     <div id="detailBody"></div>
     <button class="danger" id="deleteBtn" type="button" hidden>删除这条祝福</button>
@@ -499,7 +499,7 @@
     deviceId=localStorage.getItem('b18_device_id')||'';
     if(!deviceId){deviceId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);localStorage.setItem('b18_device_id',deviceId);}
   }catch(e){deviceId='d'+Date.now().toString(36);}
-  var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null;
+  var pendingImg='', currentDetailId=null, detailFromAll=false, cut=false, toastTimer=null, resizeTimer=null;
   var MAX_BITES=3, biteStage=0, eating=false, openFormTimer=null;
   var biteMarks=document.querySelectorAll('.bite-mark');
   var biteMarksGroup=document.querySelector('.bite-marks');
@@ -614,11 +614,12 @@
       btn.type='button';btn.className='note';
       if(wallMode){
         var col=i%perRow,row=Math.floor(i/perRow);
-        var leftBase=col===0?0:44;
-        btn.style.left=(leftBase+((i*37)%32))+'%';
-        btn.style.top=(12+row*150+((i*53)%58))+'px';
-        btn.style.setProperty('--rot',(((i*31)%25)-12)+'deg');
-        btn.style.width=((window.innerWidth<700?104:150)+((i*13)%22))+'px';
+        var mobileView=window.innerWidth<700;
+        var baseLeft=mobileView?(col===0?1:51):(col===0?1:(col===1?34:67));
+        btn.style.left=(baseLeft+(((i*29)%7)-3))+'%';
+        btn.style.top=(12+row*150+(((i*41)%31)-15))+'px';
+        btn.style.setProperty('--rot',(((i*23)%13)-6)+'deg');
+        btn.style.width=((mobileView?104:150)+((i*7)%(mobileView?12:14)))+'px';
       }else{
         var s=slots[order[i%order.length]];
         btn.style.left=s.l;btn.style.top=s.t;btn.style.setProperty('--rot',s.r+'deg');
@@ -640,7 +641,13 @@
   }
   function openModal(el){el.classList.add('show');}
   function closeModal(el){el.classList.remove('show');}
+  function closeDetail(){
+    var back=detailFromAll;
+    closeModal(detailModal);detailFromAll=false;
+    if(back)openAll();
+  }
   function closeAll(){
+    detailFromAll=false;
     clearTimeout(openFormTimer);
     closeModal(formModal);closeModal(detailModal);closeModal(allModal);
     eating=false;serveScene.classList.remove('show','eating');
@@ -686,7 +693,8 @@
     nameInput.value='';textInput.value='';imageInput.value='';pendingImg='';
     previewWrap.hidden=true;preview.style.backgroundImage='';
   }
-  function openDetail(id){
+  function openDetail(id,fromAll){
+    detailFromAll=!!fromAll;
     var n=null;
     for(var i=0;i<notes.length;i++){if(notes[i].id===id){n=notes[i];break;}}
     if(!n)return;
@@ -706,7 +714,7 @@
       var who=document.createElement('b');who.textContent=(n.name?n.name:'匿名朋友')+' · '+(n.time||'');
       var p=document.createElement('p');p.textContent=n.text;
       b.appendChild(who);b.appendChild(p);
-      b.addEventListener('click',function(){closeModal(allModal);openDetail(n.id);});
+      b.addEventListener('click',function(){closeModal(allModal);openDetail(n.id,true);});
       allList.appendChild(b);
     });
     clearBtn.hidden=!isAdmin;
@@ -788,8 +796,11 @@
     serveCake();
   });
   deleteBtn.addEventListener('click',function(){
+    var back=detailFromAll;
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
-    saveNotes();publishNotes();closeModal(detailModal);renderNotes();toast('这条祝福已经删除');
+    saveNotes();publishNotes();closeModal(detailModal);detailFromAll=false;renderNotes();
+    if(back)openAll();
+    toast('这条祝福已经删除');
   });
   clearBtn.addEventListener('click',function(){
     if(!window.confirm('确定要清空所有祝福吗？此操作无法撤销。'))return;
@@ -808,11 +819,21 @@
     try{document.execCommand('copy');toast('链接已复制，发给朋友吧');}catch(e){toast('复制失败，请手动复制地址栏链接');}
     ta.remove();
   }
-  document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',closeAll);});
-  document.querySelectorAll('.modal').forEach(function(m){
-    m.addEventListener('click',function(e){if(e.target===m)closeAll();});
+  document.querySelectorAll('[data-close]').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(this.getAttribute('data-close')==='detail')closeDetail();else closeAll();
+    });
   });
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll();});
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click',function(e){
+      if(e.target!==m)return;
+      if(m===detailModal)closeDetail();else closeAll();
+    });
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    if(detailModal.classList.contains('show'))closeDetail();else closeAll();
+  });
   window.addEventListener('resize',function(){
     clearTimeout(resizeTimer);resizeTimer=setTimeout(renderNotes,180);
   });
