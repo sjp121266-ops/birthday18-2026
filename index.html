@@ -372,7 +372,7 @@
           </svg>
         </span>
       </button>
-      <button class="reset" id="resetBtn" type="button" hidden>重新许愿</button>
+      <button class="reset" id="resetBtn" type="button" hidden>重写一个</button>
     </div>
   </section>
 
@@ -380,7 +380,7 @@
     <button class="ghost" id="allBtn" type="button" hidden>查看全部祝福 <span id="count">0</span></button>
     <button class="ghost" id="writeBtn" type="button">直接写一句祝福</button>
   </div>
-  <p class="foot-note">祝福会保存在你自己的设备上，点开即可写下这一刻</p>
+  <p class="foot-note">祝福会实时同步到所有打开这个链接的人 · <span id="wallStatus">正在连接祝福墙…</span></p>
 </main>
 
 <div class="serve-scene" id="serveScene" aria-hidden="true">
@@ -468,6 +468,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="mqtt.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -502,6 +503,42 @@
   var notes=loadNotes();
   function saveNotes(){
     try{localStorage.setItem(KEY,JSON.stringify(notes));return true;}catch(e){return false;}
+  }
+  var wallStatus=$('wallStatus'), SHARED_TOPIC='birthday18/siyu-2026-notes';
+  var mqttClient=null, sharedReady=false;
+  function setWallStatus(text){if(wallStatus)wallStatus.textContent=text;}
+  function publishNotes(){
+    if(mqttClient&&mqttClient.connected){
+      try{mqttClient.publish(SHARED_TOPIC,JSON.stringify(notes),{qos:0,retain:true});}catch(e){}
+    }
+  }
+  function initShared(){
+    if(typeof mqtt==='undefined'){setWallStatus('离线，祝福暂存在本机');return;}
+    setWallStatus('正在连接祝福墙…');
+    try{
+      mqttClient=mqtt.connect('wss://broker.hivemq.com:8884/mqtt',{
+        clientId:'b18-'+Math.random().toString(16).slice(2,10),
+        clean:true,reconnectPeriod:4000,connectTimeout:10000
+      });
+      mqttClient.on('connect',function(){
+        setWallStatus('已连接，实时同步中');
+        mqttClient.subscribe(SHARED_TOPIC,{qos:0},function(err){
+          if(err)return;
+          setTimeout(function(){if(!sharedReady)publishNotes();},1000);
+        });
+      });
+      mqttClient.on('message',function(topic,payload){
+        if(topic!==SHARED_TOPIC)return;
+        try{
+          var arr=JSON.parse(payload.toString());
+          if(!Array.isArray(arr))return;
+          sharedReady=true;notes=arr.slice();saveNotes();renderNotes();
+        }catch(e){}
+      });
+      mqttClient.on('offline',function(){setWallStatus('离线，祝福暂存在本机');});
+      mqttClient.on('error',function(){setWallStatus('离线，祝福暂存在本机');});
+      mqttClient.on('reconnect',function(){setWallStatus('正在重连祝福墙…');});
+    }catch(e){setWallStatus('离线，祝福暂存在本机');}
   }
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -658,11 +695,11 @@
     reader.onload=function(){
       var img=new Image();
       img.onload=function(){
-        var max=900,w=img.width,h=img.height,scale=Math.min(1,max/Math.max(w,h));
+        var max=720,w=img.width,h=img.height,scale=Math.min(1,max/Math.max(w,h));
         w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));
         var c=document.createElement('canvas');c.width=w;c.height=h;
         var ctx=c.getContext('2d');ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
-        try{pendingImg=c.toDataURL('image/jpeg',0.76);}catch(err){toast('这张图片处理失败，请换一张');return;}
+        try{pendingImg=c.toDataURL('image/jpeg',0.62);}catch(err){toast('这张图片处理失败，请换一张');return;}
         preview.style.backgroundImage='url("'+pendingImg+'")';previewWrap.hidden=false;
       };
       img.onerror=function(){toast('图片读取失败，请换一张');};
@@ -683,6 +720,7 @@
     notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
+    publishNotes();
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
     resetBites();
     renderNotes();burst();
@@ -712,12 +750,12 @@
   });
   deleteBtn.addEventListener('click',function(){
     notes=notes.filter(function(n){return n.id!==currentDetailId;});
-    saveNotes();closeModal(detailModal);renderNotes();toast('这条祝福已经删除');
+    saveNotes();publishNotes();closeModal(detailModal);renderNotes();toast('这条祝福已经删除');
   });
   clearBtn.addEventListener('click',function(){
     if(!window.confirm('确定要清空所有祝福吗？此操作无法撤销。'))return;
     notes=notes.filter(function(n){return n.demo;});
-    saveNotes();closeModal(allModal);renderNotes();toast('已清空你写下的祝福');
+    saveNotes();publishNotes();closeModal(allModal);renderNotes();toast('已清空你写下的祝福');
   });
   $('copyLink').addEventListener('click',function(){
     var url=window.location.href.split('#')[0];
@@ -751,6 +789,7 @@
   }
   setCountdown();
   renderNotes();
+  initShared();
 })();
 </script>
 </body>
