@@ -83,16 +83,12 @@
   .note-img{display:block;width:100%;height:44px;margin-top:8px;border-radius:8px;background-size:cover;background-position:center}
   .note-more{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);white-space:nowrap;
     font-size:11px;color:#A8897E}
+  .notes-canvas{position:absolute;inset:0}
   .stage.cake-away .cake-slot{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(28px)}
-  .stage.cake-away .notes-layer{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
-    gap:14px;align-content:start;overflow-y:auto;max-height:100%;padding:8px 6px 26px;pointer-events:auto;
+  .stage.cake-away .notes-layer{overflow-y:auto;pointer-events:auto;
     scrollbar-width:thin;scrollbar-color:rgba(190,150,130,.35) transparent}
   .stage.cake-away .notes-layer::-webkit-scrollbar{width:6px}
   .stage.cake-away .notes-layer::-webkit-scrollbar-thumb{background:rgba(190,150,130,.35);border-radius:99px}
-  .stage.cake-away .note{position:static;width:auto;min-height:0;transform:none!important}
-  .stage.cake-away .note-inner{animation:none!important}
-  .stage.cake-away .note-text{display:block;-webkit-line-clamp:unset;overflow:visible}
-  .stage.cake-away .note-img{height:96px}
   .stage.cake-away .note-more{display:none}
 
   .cake-slot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(440px,94vw);z-index:5}
@@ -220,7 +216,6 @@
     .eyebrow{font-size:9px;letter-spacing:.3em}
     .sub{font-size:12px;line-height:1.8}
     .stage{height:420px;margin-top:2px}
-    .stage.cake-away .notes-layer{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
     .note{width:112px;min-height:52px;padding:8px 9px 9px;border-radius:11px}
     .tape{width:38px;height:11px;margin-left:-19px;top:-5px}
     .note-name{font-size:9px;margin-bottom:3px}
@@ -263,7 +258,7 @@
   </section>
 
   <section class="stage" id="stage" aria-label="生日蛋糕与祝福">
-    <div class="notes-layer" id="notesLayer"></div>
+    <div class="notes-layer" id="notesLayer"><div class="notes-canvas" id="notesCanvas"></div></div>
     <div class="cake-slot">
       <button class="cake-button" id="cakeBtn" type="button" aria-label="点击切开生日蛋糕">
         <span class="cake-art" id="cakeArt">
@@ -497,7 +492,7 @@
   ];
 
   var $ = function(id){return document.getElementById(id);};
-  var notesLayer=$('notesLayer'), cakeBtn=$('cakeBtn'), cakeArt=$('cakeArt');
+  var notesLayer=$('notesLayer'), notesCanvas=$('notesCanvas'), cakeBtn=$('cakeBtn'), cakeArt=$('cakeArt');
   var hint=$('hint'), resetBtn=$('resetBtn'), allBtn=$('allBtn'), countEl=$('count');
   var formModal=$('formModal'), detailModal=$('detailModal'), allModal=$('allModal');
   var nameInput=$('nameInput'), textInput=$('textInput'), imageInput=$('imageInput');
@@ -610,15 +605,29 @@
     ];
   }
   function renderNotes(){
-    notesLayer.innerHTML='';
+    notesCanvas.innerHTML='';
     var slots=getSlots(), wallMode=stage.classList.contains('cake-away');
     var visible=wallMode?notes.slice():notes.slice(-8);
     var order=window.innerWidth<700?[0,1,2,3,4,5,6,7]:[0,4,2,6,1,5,3,7];
+    var perRow=window.innerWidth<700?2:3;
+    if(wallMode){
+      var rows=Math.ceil(visible.length/perRow);
+      notesCanvas.style.height=Math.max(window.innerWidth<700?420:510,60+rows*150)+'px';
+    }else{
+      notesCanvas.style.height='';
+    }
     visible.forEach(function(n,i){
-      var s=slots[order[i%order.length]];
       var btn=document.createElement('button');
       btn.type='button';btn.className='note';
-      btn.style.left=s.l;btn.style.top=s.t;btn.style.setProperty('--rot',s.r+'deg');
+      if(wallMode){
+        var col=i%perRow,row=Math.floor(i/perRow);
+        btn.style.left=(3+col*(94/perRow)+(((i*17)%9)-4)*0.7)+'%';
+        btn.style.top=(14+row*150+((i*29)%26))+'px';
+        btn.style.setProperty('--rot',(((i*23)%17)-8)+'deg');
+      }else{
+        var s=slots[order[i%order.length]];
+        btn.style.left=s.l;btn.style.top=s.t;btn.style.setProperty('--rot',s.r+'deg');
+      }
       btn.style.setProperty('--dur',(5.2+i*0.55).toFixed(2)+'s');
       btn.style.setProperty('--delay',(-i*0.73).toFixed(2)+'s');
       var inner=document.createElement('span');inner.className='note-inner';
@@ -629,12 +638,12 @@
       if(n.img){var im=document.createElement('span');im.className='note-img';im.style.backgroundImage='url("'+n.img+'")';inner.appendChild(im);}
       btn.appendChild(inner);
       btn.addEventListener('click',function(){openDetail(n.id);});
-      notesLayer.appendChild(btn);
+      notesCanvas.appendChild(btn);
     });
     if(!wallMode&&notes.length>visible.length){
       var more=document.createElement('button');more.type='button';more.className='ghost note-more';
       more.textContent='还有 '+(notes.length-visible.length)+' 条祝福';
-      more.addEventListener('click',openAll);notesLayer.appendChild(more);
+      more.addEventListener('click',openAll);notesCanvas.appendChild(more);
     }
     countEl.textContent=notes.length;
     allBtn.hidden=notes.length===0;
@@ -760,14 +769,9 @@
     var text=textInput.value.trim();
     if(!text){textInput.focus();return;}
     var nickname=nameInput.value.trim();
-    var key=nickname.toLowerCase(), idx=-1;
-    for(var i=0;i<notes.length;i++){
-      var old=notes[i];
-      if(nickname?(old.name&&old.name.trim().toLowerCase()===key):(!old.name&&old.deviceId===deviceId)){idx=i;break;}
-    }
-    var note={id:idx>=0?notes[idx].id:'n'+Date.now()+Math.random().toString(36).slice(2,6),
+    var note={id:'n'+Date.now()+Math.random().toString(36).slice(2,6),
       name:nickname,text:text,img:pendingImg,time:nowText(),deviceId:deviceId};
-    if(idx>=0)notes[idx]=note;else notes.push(note);
+    notes.push(note);
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
     publishNotes();
@@ -775,7 +779,7 @@
     resetBites();
     stage.classList.add('cake-away');
     renderNotes();burst();
-    toast(!saved&&note.img?'祝福已显示，本机存储空间不足，照片未保存':(idx>=0?'已把你之前写的那条换成新内容':'祝福已经落在蛋糕后面了'));
+    toast(saved?'祝福已经落在蛋糕后面了':'祝福已显示，本机存储空间不足，照片未保存');
   });
 
   cakeBtn.addEventListener('click',function(){
