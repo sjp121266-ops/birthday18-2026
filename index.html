@@ -113,7 +113,11 @@
   .serve-scene.show .serve-plate{animation:servePlate 1.05s cubic-bezier(.2,.86,.28,1) both}
   .serve-scene.eating .serve-plate{pointer-events:auto;cursor:pointer}
   .serve-scene.eating .serve-plate:hover{filter:drop-shadow(0 18px 24px rgba(185,135,118,.28))}
-  .served-slice{transition:clip-path .35s ease,opacity .4s ease}
+  .served-slice{transition:opacity .4s ease}
+  .bite-mark{opacity:0;transition:opacity .32s ease}
+  .bite-mark.on{opacity:1}
+  .serve-plate.munch svg{animation:munch .26s ease}
+  @keyframes munch{0%{transform:scale(1)}45%{transform:scale(.965)}100%{transform:scale(1)}}
   .bite-hint{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);white-space:nowrap;
     font-size:12px;color:#A57D76;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 13px;
     box-shadow:0 8px 20px rgba(130,96,80,.12);opacity:0;transition:opacity .3s ease}
@@ -391,6 +395,23 @@
       <g class="served-slice" id="servedSlice" transform="translate(-145,-80)">
         <use href="#cakeSliceArt"></use>
       </g>
+      <g class="bite-marks" aria-hidden="true">
+        <g class="bite-mark" id="bite1">
+          <ellipse cx="212" cy="150" rx="21" ry="17" transform="rotate(-12 212 150)" fill="#FAF3EC" stroke="#E9DCD0" stroke-width="1"/>
+          <ellipse cx="202" cy="137" rx="13" ry="10" transform="rotate(18 202 137)" fill="#FAF3EC"/>
+          <circle cx="204" cy="165" r="11" fill="#FAF3EC"/>
+        </g>
+        <g class="bite-mark" id="bite2">
+          <ellipse cx="198" cy="110" rx="23" ry="18" transform="rotate(14 198 110)" fill="#FAF3EC" stroke="#E9DCD0" stroke-width="1"/>
+          <ellipse cx="186" cy="98" rx="14" ry="11" transform="rotate(-20 186 98)" fill="#FAF3EC"/>
+          <circle cx="188" cy="126" r="12" fill="#FAF3EC"/>
+        </g>
+        <g class="bite-mark" id="bite3">
+          <ellipse cx="178" cy="152" rx="28" ry="22" transform="rotate(-8 178 152)" fill="#FAF3EC" stroke="#E9DCD0" stroke-width="1"/>
+          <ellipse cx="164" cy="137" rx="17" ry="13" transform="rotate(22 164 137)" fill="#FAF3EC"/>
+          <circle cx="167" cy="169" r="15" fill="#FAF3EC"/>
+        </g>
+      </g>
     </svg>
     <span class="bite-hint" id="biteHint">点一下，吃一口 · 还剩 3 口</span>
   </div>
@@ -466,7 +487,7 @@
   var serveScene=$('serveScene'), servePlate=$('servePlate'), servedSlice=$('servedSlice'), biteHint=$('biteHint');
   var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null;
   var MAX_BITES=3, biteStage=0, eating=false, openFormTimer=null;
-  var BITE_CLIPS=['inset(0 0 0 0)','inset(0 20% 0 0)','inset(0 46% 0 0)','inset(0 74% 0 0)'];
+  var biteMarks=document.querySelectorAll('.bite-mark');
 
   function loadNotes(){
     try{
@@ -542,11 +563,15 @@
     eating=false;serveScene.classList.remove('show','eating');
   }
 
+  function resetBites(){
+    for(var i=0;i<biteMarks.length;i++)biteMarks[i].classList.remove('on');
+    servedSlice.style.opacity='1';
+    servePlate.classList.remove('munch');
+  }
   function serveCake(){
     clearTimeout(openFormTimer);
     biteStage=0;eating=true;
-    servedSlice.style.clipPath=BITE_CLIPS[0];
-    servedSlice.style.opacity='1';
+    resetBites();
     biteHint.textContent='点一下，吃一口 · 还剩 '+MAX_BITES+' 口';
     serveScene.classList.remove('show','eating');
     void serveScene.offsetWidth;
@@ -556,13 +581,17 @@
     if(!eating)return;
     biteStage++;
     burst(7);
+    servePlate.classList.remove('munch');
+    void servePlate.offsetWidth;
+    servePlate.classList.add('munch');
+    setTimeout(function(){servePlate.classList.remove('munch');},280);
+    if(biteStage<biteMarks.length)biteMarks[biteStage].classList.add('on');
     if(biteStage>=MAX_BITES){
       eating=false;
       serveScene.classList.remove('eating');
       servedSlice.style.opacity='0';
       openFormTimer=setTimeout(openForm,560);
     }else{
-      servedSlice.style.clipPath=BITE_CLIPS[biteStage];
       biteHint.textContent='点一下，吃一口 · 还剩 '+(MAX_BITES-biteStage)+' 口';
     }
   }
@@ -650,7 +679,7 @@
     var saved=saveNotes();
     if(!saved&&note.img){note.img='';saveNotes();}
     closeModal(formModal);eating=false;serveScene.classList.remove('show','eating');
-    servedSlice.style.clipPath=BITE_CLIPS[0];servedSlice.style.opacity='1';
+    resetBites();
     renderNotes();burst();
     toast(saved?'祝福已经落在蛋糕后面了':'祝福已显示，本机存储空间不足，照片未保存');
   });
@@ -665,7 +694,7 @@
     clearTimeout(openFormTimer);
     cut=false;cakeArt.classList.remove('cut');cakeBtn.disabled=false;hint.hidden=false;resetBtn.hidden=true;
     eating=false;serveScene.classList.remove('show','eating');
-    servedSlice.style.clipPath=BITE_CLIPS[0];servedSlice.style.opacity='1';
+    resetBites();
     closeAll();
   });
   allBtn.addEventListener('click',openAll);
