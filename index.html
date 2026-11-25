@@ -588,7 +588,7 @@
       var inner=document.createElement('span');inner.className='note-inner';
       var tape=document.createElement('span');tape.className='tape';inner.appendChild(tape);
       var name=document.createElement('span');name.className='note-name';
-      name.textContent=(n.name?n.name+' 的祝福':'一位匿名朋友');inner.appendChild(name);
+      name.textContent=(n.name?n.name+' 的祝福':'匿名朋友 · 点开看全文');inner.appendChild(name);
       var text=document.createElement('span');text.className='note-text';text.textContent=n.text;inner.appendChild(text);
       if(n.img){var im=document.createElement('span');im.className='note-img';im.style.backgroundImage='url("'+n.img+'")';inner.appendChild(im);}
       btn.appendChild(inner);
@@ -656,7 +656,7 @@
     for(var i=0;i<notes.length;i++){if(notes[i].id===id){n=notes[i];break;}}
     if(!n)return;
     currentDetailId=id;
-    detailTitle.textContent=(n.name?n.name+' 的祝福':'一句祝福');
+    detailTitle.textContent=(n.name?n.name+' 的祝福':'匿名朋友的祝福');
     detailBody.innerHTML='';
     if(n.img){var img=document.createElement('img');img.className='detail-img';img.src=n.img;img.alt='祝福配图';detailBody.appendChild(img);}
     var p=document.createElement('div');p.className='detail-text';p.textContent=n.text;detailBody.appendChild(p);
