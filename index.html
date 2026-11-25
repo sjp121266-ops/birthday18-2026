@@ -114,6 +114,7 @@
   .serve-scene.eating .serve-plate{pointer-events:auto;cursor:pointer}
   .serve-scene.eating .serve-plate:hover{filter:drop-shadow(0 18px 24px rgba(185,135,118,.28))}
   .served-slice{transition:opacity .4s ease}
+  .bite-marks{transition:opacity .35s ease}
   .bite-mark{opacity:0;transition:opacity .32s ease}
   .bite-mark.on{opacity:1}
   .serve-plate.munch svg{animation:munch .26s ease}
@@ -488,6 +489,7 @@
   var pendingImg='', currentDetailId=null, cut=false, toastTimer=null, resizeTimer=null;
   var MAX_BITES=3, biteStage=0, eating=false, openFormTimer=null;
   var biteMarks=document.querySelectorAll('.bite-mark');
+  var biteMarksGroup=document.querySelector('.bite-marks');
 
   function loadNotes(){
     try{
@@ -565,6 +567,7 @@
 
   function resetBites(){
     for(var i=0;i<biteMarks.length;i++)biteMarks[i].classList.remove('on');
+    if(biteMarksGroup)biteMarksGroup.style.opacity='1';
     servedSlice.style.opacity='1';
     servePlate.classList.remove('munch');
   }
@@ -591,6 +594,7 @@
       serveScene.classList.remove('eating');
       servedSlice.style.opacity='0';
       for(var j=0;j<biteMarks.length;j++)biteMarks[j].classList.remove('on');
+      if(biteMarksGroup)biteMarksGroup.style.opacity='0';
       openFormTimer=setTimeout(openForm,560);
     }else{
       biteHint.textContent='点一下，吃一口 · 还剩 '+(MAX_BITES-biteStage)+' 口';
